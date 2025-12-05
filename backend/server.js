@@ -1,27 +1,3 @@
-// require("dotenv").config();
-// const express = require("express");
-// const mongoose = require("mongoose");
-// const cors = require("cors");
-// const path = require("path");
-
-// const app = express();
-
-// mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/backend")
-//   .then(() => console.log("Connected to MongoDB"))
-//   .catch(err => console.error("MongoDB error:", err));
-
-// app.use(cors());
-// app.use(express.json());
-
-// app.use("/profileImages", express.static(path.join(__dirname, "profileImages")));
-
-// app.use("/api/user", require("./routes/userRoutes"));
-
-// const PORT = process.env.PORT || 5000;
-
-// app.listen(PORT, () => {
-//     console.log(`Server running on port ${PORT}`);
-// });
 const cors = require("cors");
 const express = require("express");
 const mongoose = require("mongoose");
