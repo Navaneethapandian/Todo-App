@@ -1,4 +1,4 @@
-import { UserPlus } from "lucide-react";
+import { Eye, EyeOff, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
@@ -10,6 +10,8 @@ export function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("user");
+  const [showPassword, setShowPassword] = useState(false);
+
   useEffect(() => {
     console.log({
       name : name,
@@ -18,10 +20,9 @@ export function RegisterPage() {
       role : role,
     });
   }, [name,email,password,role]);
+
   const navigate = useNavigate();
-  useEffect(() => {
-    console.log({ name, email, password, role });
-  }, [name, email, password, role]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name || !email || !password) {
@@ -80,18 +81,24 @@ export function RegisterPage() {
                 placeholder="Enter your email"
               />
             </div>
+            <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    className="w-full border rounded-lg px-3 py-2 pr-10"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="New Password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-2.5 text-gray-600"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
             <div>
-              <label className="block mb-2 text-gray-700">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
-                placeholder="Create a password"
-              />
-            </div>
-            <div>
-              <label className="block mb-2 text-gray-700">Role</label>
+              <label className="block mb-2 text-gray-700 ">Role</label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
@@ -116,7 +123,7 @@ export function RegisterPage() {
               </button>
             </p>
           </div>
-        </div>
+        </div>``
       </div>
     </div>
   );

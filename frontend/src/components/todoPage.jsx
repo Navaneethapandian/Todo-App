@@ -3,47 +3,65 @@ import { useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import { useSelector, useDispatch } from "react-redux";
-import { getTodos, createTodo, updateTodoApi, deleteTodoApi } from "./App/todoSlice";
+import {
+  getTodos,
+  createTodo,
+  updateTodoApi,
+  deleteTodoApi,
+  nextPage,
+  prevPage,
+} from "./App/todoSlice";
 import "../index.css";
 
 export default function TodoPage() {
   const [newTodo, setNewTodo] = useState("");
   const [newDesc, setNewDesc] = useState("");
-  useEffect(() => {
-    console.log({
-      todo: newTodo,
-      description: newDesc,
-    });
-  }, [newTodo, newDesc]);
+
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("LoginInUser")) || {
-    _id: "guest",
+    _id: "",
     name: "Guest",
   };
+
   const handleLogout = () => {
     localStorage.removeItem("LoginInUser");
     localStorage.removeItem("token");
     toast.info("Logged out");
     setTimeout(() => navigate("/login"), 800);
   };
+
   return (
     <>
-    <ToastContainer autoClose={900} />
+      <ToastContainer autoClose={900} />
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-4xl mx-auto p-4">
-          <h1 className="text-4xl font-bold text-blue-800 text-center mb-6"> TODO APP </h1>
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6 flex items-center justify-between">
+          <h1 className="text-4xl font-bold text-blue-800 text-center mb-6">
+            TODO APP
+          </h1>
+
+          <div className="bg-white rounded-lg shadow-md p-6 mb-4 flex items-center justify-between">
             <div>
               <h1 className="text-lg font-medium">My Tasks</h1>
-              <p className="text-gray-600">Welcome to Todo App, {user.name}!</p>
+              <p className="text-gray-600">Welcome, {user.name}</p>
             </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-            >
-              <LogOut className="w-5 h-5" /> Logout
-            </button>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => navigate("/profile")}
+                className="px-4 py-2 bg-blue-100 rounded"
+              >
+                Profile
+              </button>
+
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                <LogOut className="w-5 h-5" /> Logout
+              </button>
+            </div>
           </div>
+
           <AddTodoForm
             newTodo={newTodo}
             setNewTodo={setNewTodo}
@@ -51,14 +69,18 @@ export default function TodoPage() {
             setNewDesc={setNewDesc}
             userId={user._id}
           />
+
           <TodoList />
         </div>
       </div>
     </>
   );
 }
+
 function TodoList() {
-  const { todos } = useSelector((state) => state.todos);
+  const { todos, page, limit, totalPages, loading } = useSelector(
+    (state) => state.todos
+  );
   const dispatch = useDispatch();
 
   const [editId, setEditId] = useState(null);
@@ -66,17 +88,9 @@ function TodoList() {
   const [editDesc, setEditDesc] = useState("");
   const [editStatus, setEditStatus] = useState("pending");
 
-  useEffect(()=>{
-    console.log({
-      Title : editTitle,
-      Description : editDesc,
-      status : editStatus,
-    });
-  },[editTitle,editDesc,editStatus]);
-  
   useEffect(() => {
-    dispatch(getTodos());
-  }, [dispatch]);
+    dispatch(getTodos({ page, limit }));
+  }, [page, limit, dispatch]);
 
   const startEdit = (todo) => {
     setEditId(todo._id);
@@ -86,8 +100,8 @@ function TodoList() {
   };
 
   const saveEdit = (id) => {
-    if (!editTitle.trim()) 
-      return toast.error("Title cannot be empty");
+    if (!editTitle.trim()) return toast.error("Title cannot be empty");
+
     dispatch(
       updateTodoApi({
         id,
@@ -96,19 +110,23 @@ function TodoList() {
         status: editStatus,
       })
     );
-    toast.success("Task updated!");
+
+    toast.success("Updated");
     setEditId(null);
   };
+
   const handleDelete = (id) => {
     dispatch(deleteTodoApi(id));
-    toast.success("Task deleted!");
+    toast.success("Deleted");
   };
+
   const activeTodos = todos.filter((t) => t.status !== "completed").length;
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
       <div className="flex gap-6 mb-4">
         <div>
-          <p className="text-gray-600">Total Tasks</p>
+          <p className="text-gray-600">Total</p>
           <p className="text-blue-600">{todos.length}</p>
         </div>
         <div>
@@ -117,103 +135,104 @@ function TodoList() {
         </div>
         <div>
           <p className="text-gray-600">Completed</p>
-          <p className="text-green-600">{todos.length - activeTodos}</p>
+          <p className="text-green-600">
+            {todos.length - activeTodos}
+          </p>
         </div>
       </div>
-      {todos.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">No tasks yet.</div>
+
+      {loading ? (
+        <p className="text-center text-gray-400">Loading...</p>
+      ) : todos.length === 0 ? (
+        <p className="text-center text-gray-400 py-8">No tasks found</p>
       ) : (
-        <div className="space-y-2">
-          {todos.map((todo) => (
-            <div
-              key={todo._id}
-              className="flex flex-col md:flex-row items-start md:items-center gap-3 p-4 rounded-lg hover:bg-gray-50 transition group"
-            >
-              <div className="flex-1 min-w-0">
-                {editId === todo._id ? (
-                  <div className="flex flex-col gap-2">
-                    <input
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                      className="px-3 py-1 border rounded-lg"
-                      placeholder="Title"
-                    />
-                    <textarea
-                      value={editDesc}
-                      onChange={(e) => setEditDesc(e.target.value)}
-                      placeholder="Description"
-                      className="px-3 py-1 border rounded-lg resize-none"
-                    />
-                    <select
-                      value={editStatus}
-                      onChange={(e) => setEditStatus(e.target.value)}
-                      className="px-3 py-2 border rounded-lg w-40"
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="in-progress">In Progress</option>
-                      <option value="completed">Completed</option>
-                    </select>
-                  </div>
-                ) : (
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p
-                        className={`font-semibold ${
-                          todo.status === "completed"
-                        }`}
-                      >
-                        {todo.title}
-                      </p>
-                      <p className="text-gray-600 text-sm">{todo.description}</p>
-                    </div>
-                    <span
-                      className={`px-2 py-1 text-xs rounded-full ${statusColor(
-                        todo.status
-                      )}`}
-                    >
-                      {todo.status === "in-progress"
-                        ? "In Progress"
-                        : todo.status.charAt(0).toUpperCase() +
-                          todo.status.slice(1)}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="flex gap-2 mt-2 md:mt-0">
-                {editId === todo._id ? (
-                  <button
-                    onClick={() => saveEdit(todo._id)}
-                    className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                  >
-                    Save
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => startEdit(todo)}
-                    className="px-3 py-1 bg-gray-600 text-white rounded-lg hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition"
-                  >
-                    Edit
-                  </button>
-                )}
-                <button
-                  onClick={() => handleDelete(todo._id)}
-                  className="px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 opacity-0 group-hover:opacity-100 transition"
+        todos.map((todo) => (
+          <div
+            key={todo._id}
+            className="border p-3 rounded-lg flex justify-between group hover:bg-gray-50 mb-2"
+          >
+            {editId === todo._id ? (
+              <div className="flex-1">
+                <input
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="border px-3 py-1 rounded w-full mb-2"
+                />
+                <textarea
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                  className="border px-3 py-1 rounded w-full mb-2"
+                />
+                <select
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value)}
+                  className="border px-3 py-1 rounded"
                 >
-                  Delete
+                  <option value="pending">Pending</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+
+                <button
+                  onClick={() => saveEdit(todo._id)}
+                  className="mt-2 px-4 py-1 bg-blue-600 text-white rounded"
+                >
+                  Save
                 </button>
               </div>
+            ) : (
+              <div className="flex-1">
+                <p className="font-semibold">{todo.title}</p>
+                <p className="text-gray-600">{todo.description}</p>
+                <span className="text-sm px-2 py-1 rounded bg-gray-200 inline-block mt-1">
+                  {todo.status}
+                </span>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              {editId !== todo._id && (
+                <button
+                  onClick={() => startEdit(todo)}
+                  className="px-3 py-1 bg-gray-600 text-white rounded opacity-0 group-hover:opacity-100"
+                >
+                  Edit
+                </button>
+              )}
+              <button
+                onClick={() => handleDelete(todo._id)}
+                className="px-3 py-1 bg-red-600 text-white rounded opacity-0 group-hover:opacity-100"
+              >
+                Delete
+              </button>
             </div>
-          ))}
-        </div>
+          </div>
+        ))
       )}
+
+      <div className="flex justify-between mt-6 items-center">
+        <button
+          disabled={page === 1}
+          onClick={() => dispatch(prevPage())}
+          className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
+        >
+          Previous
+        </button>
+
+        <p className="font-semibold">
+          Page {page} / {totalPages}
+        </p>
+
+        <button
+          disabled={page === totalPages}
+          onClick={() => dispatch(nextPage())}
+          className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
-}
-
-function statusColor(status) {
-  if (status === "completed") return "bg-green-100 text-green-800";
-  if (status === "in-progress") return "bg-yellow-100 text-yellow-800";
-  return "bg-gray-200 text-gray-800";
 }
 
 function AddTodoForm({ newTodo, setNewTodo, newDesc, setNewDesc, userId }) {
@@ -222,7 +241,8 @@ function AddTodoForm({ newTodo, setNewTodo, newDesc, setNewDesc, userId }) {
 
   const handleAdd = (e) => {
     e.preventDefault();
-    if (!newTodo.trim()) return toast.error("Title cannot be empty");
+    if (!newTodo.trim()) return toast.error("Title missing");
+
     dispatch(
       createTodo({
         title: newTodo,
@@ -231,40 +251,44 @@ function AddTodoForm({ newTodo, setNewTodo, newDesc, setNewDesc, userId }) {
         userId,
       })
     );
+
     setNewTodo("");
     setNewDesc("");
     setStatus("pending");
-    toast.success("Task added!");
+    toast.success("Added");
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-      <form onSubmit={handleAdd} className="flex flex-col md:flex-row gap-3">
+    <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+      <form
+        onSubmit={handleAdd}
+        className="grid grid-cols-1 md:grid-cols-4 gap-3"
+      >
         <input
           value={newTodo}
           onChange={(e) => setNewTodo(e.target.value)}
-          placeholder="Enter Title"
-          className="flex-1 px-4 py-2 border rounded-lg"
+          placeholder="Title"
+          className="border px-4 py-2 rounded"
         />
 
         <input
           value={newDesc}
           onChange={(e) => setNewDesc(e.target.value)}
-          placeholder="Enter Description"
-          className="flex-1 px-4 py-2 border rounded-lg"
+          placeholder="Description"
+          className="border px-4 py-2 rounded"
         />
 
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="px-4 py-2 border rounded-lg"
+          className="border px-4 py-2 rounded"
         >
           <option value="pending">Pending</option>
           <option value="in-progress">In Progress</option>
           <option value="completed">Completed</option>
         </select>
 
-        <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+        <button className="bg-blue-600 text-white px-6 py-2 rounded">
           Add Task
         </button>
       </form>

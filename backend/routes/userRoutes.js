@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-
 const {
   registerUser,
   loginUser,
@@ -12,7 +11,6 @@ const {
   updateTodo,
   deleteTodo,
 } = require("../controllers/userController");
-
 const { authenticateToken, authorizeRole } = require("../middleware/authMiddleware");
 
 router.post("/register", registerUser);

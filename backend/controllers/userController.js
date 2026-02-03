@@ -37,9 +37,9 @@ const loginUser = async (req, res) => {
 const getProfile = async (req, res) => {
   try {
     const { id } = req.params;
-    const user = await User.findById(id).lean();
+    const user = await User.findById(id);
     if (!user) return res.status(404).json({ error: "User not found" });
-    const todos = await Todo.find({ userId: id }).sort({ createdAt: -1 });
+    const todos = await Todo.find({ userId: id });
     user.todos = todos;
     res.status(200).json({ success: true, user });
   } catch (err) {
@@ -93,12 +93,25 @@ const createTodo = async (req, res) => {
 
 const getTodos = async (req, res) => {
   try {
-    const todos = await Todo.find({ userId: req.user._id });
-    const user = await User.findById(req.user._id);
-    res.status(200).json({ success: true, user,todos });
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const userId = req.user._id;
+    const totalTodos = await Todo.countDocuments({ userId });
+    const todos = await Todo.find({ userId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    return res.status(200).json({
+      todos,
+      page,
+      limit,
+      totalTodos,
+      totalPages: Math.ceil(totalTodos / limit),
+    });
   } catch (err) {
-    console.error("GetAllTodos Error:", err.message);
-    res.status(500).json({ error: "Server Error" });
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -106,11 +119,7 @@ const updateTodo = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, status } = req.body;
-    const todo = await Todo.findOneAndUpdate(
-      { _id: id, userId: req.user._id },
-      { title, description, status },
-      { new: true }
-    );
+    const todo = await Todo.findOneAndUpdate({ _id: id, userId: req.user._id }, { title, description, status }, { new: true });
     if (!todo) return res.status(404).json({ error: "Todo not found" });
     res.status(200).json({ success: true, todo });
   } catch (err) {
